@@ -1,0 +1,154 @@
+SQL Window Functions: Interview Questions, Case Studies, and Detailed Explanations
+Introduction to SQL Window Functions
+Window functions in SQL allow you to perform calculations across a subset of rows related to the current row. Unlike aggregate functions (SUM, COUNT, etc.), which collapse multiple rows into a single output row, window functions retain individual rows while providing additional calculated values.
+
+Common Window Functions in SQL
+ROW_NUMBER(): Assigns a unique sequential integer to rows within a partition.
+RANK(): Assigns a ranking to each row within a partition, with gaps for duplicates.
+DENSE_RANK(): Similar to RANK(), but without gaps in ranking.
+NTILE(N): Distributes rows into N number of groups.
+LEAD(): Fetches the value from the next row within the partition.
+LAG(): Fetches the value from the previous row within the partition.
+FIRST_VALUE(): Retrieves the first value in an ordered partition.
+LAST_VALUE(): Retrieves the last value in an ordered partition.
+SUM(), AVG(), MIN(), MAX() (with OVER() clause): Performs aggregate calculations while retaining row-level details.
+Scenario-Based SQL Window Function Case Studies
+Case Study 1: Sales Ranking by Region
+Scenario
+A retail company wants to rank its stores based on their total sales in each region. If multiple stores have the same sales amount, they should receive the same rank, but the next rank should be skipped.
+
+SQL Query
+sql
+Copy
+Edit
+SELECT 
+    StoreID, 
+    Region, 
+    SalesAmount,
+    RANK() OVER (PARTITION BY Region ORDER BY SalesAmount DESC) AS SalesRank
+FROM SalesData;
+Explanation
+PARTITION BY Region: Ensures ranking is applied within each region.
+ORDER BY SalesAmount DESC: Highest sales get rank 1.
+RANK(): Assigns the same rank to stores with identical sales and skips numbers for the next rank.
+Example Output
+StoreID	Region	SalesAmount	SalesRank
+101	North	5000	1
+102	North	4000	2
+103	North	4000	2
+104	North	3000	4
+Case Study 2: Identifying Top 3 Highest Salaries in Each Department
+Scenario
+A company wants to identify the top 3 highest salaries in each department without removing duplicate values.
+
+SQL Query
+sql
+Copy
+Edit
+SELECT 
+    EmployeeID, 
+    Department, 
+    Salary,
+    DENSE_RANK() OVER (PARTITION BY Department ORDER BY Salary DESC) AS SalaryRank
+FROM Employees
+WHERE SalaryRank <= 3;
+Explanation
+PARTITION BY Department: Groups ranking calculations by department.
+ORDER BY Salary DESC: Highest salary gets the lowest rank.
+DENSE_RANK(): Ensures no gaps in ranking.
+Example Output
+EmployeeID	Department	Salary	SalaryRank
+1	IT	90000	1
+2	IT	85000	2
+3	IT	85000	2
+4	IT	80000	3
+Case Study 3: Finding Monthly Sales Growth
+Scenario
+A company wants to track monthly revenue growth for each product.
+
+SQL Query
+sql
+Copy
+Edit
+SELECT 
+    ProductID, 
+    SalesMonth, 
+    Revenue, 
+    LAG(Revenue, 1, 0) OVER (PARTITION BY ProductID ORDER BY SalesMonth) AS PreviousMonthRevenue,
+    Revenue - LAG(Revenue, 1, 0) OVER (PARTITION BY ProductID ORDER BY SalesMonth) AS RevenueGrowth
+FROM Sales;
+Explanation
+LAG(Revenue, 1, 0): Retrieves the previous month's revenue for the same product.
+Revenue - LAG(...): Computes the revenue difference.
+Example Output
+ProductID	SalesMonth	Revenue	PreviousMonthRevenue	RevenueGrowth
+P001	Jan 2024	10000	0	10000
+P001	Feb 2024	12000	10000	2000
+P001	Mar 2024	15000	12000	3000
+Case Study 4: Assigning Customers into Quartiles Based on Total Spend
+Scenario
+A retail store wants to classify customers into quartiles based on their total purchase amount.
+
+SQL Query
+sql
+Copy
+Edit
+SELECT 
+    CustomerID, 
+    SUM(TotalPurchase) AS TotalSpend,
+    NTILE(4) OVER (ORDER BY SUM(TotalPurchase) DESC) AS SpendQuartile
+FROM CustomerTransactions
+GROUP BY CustomerID;
+Explanation
+SUM(TotalPurchase): Aggregates total spend per customer.
+NTILE(4) OVER (...): Divides customers into four quartiles.
+Example Output
+CustomerID	TotalSpend	SpendQuartile
+C001	5000	1
+C002	4500	1
+C003	3500	2
+Case Study 5: Finding First and Last Orders of a Customer
+Scenario
+A company wants to track the first and most recent purchase made by each customer.
+
+SQL Query
+sql
+Copy
+Edit
+SELECT 
+    CustomerID, 
+    OrderID, 
+    OrderDate, 
+    FIRST_VALUE(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate ASC) AS FirstOrderDate,
+    LAST_VALUE(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS LastOrderDate
+FROM Orders;
+Explanation
+FIRST_VALUE(OrderDate): Retrieves the first order date per customer.
+LAST_VALUE(OrderDate): Retrieves the last order date per customer.
+Example Output
+CustomerID	OrderID	OrderDate	FirstOrderDate	LastOrderDate
+C001	1001	2024-01-10	2024-01-10	2024-03-15
+C001	1002	2024-03-15	2024-01-10	2024-03-15
+Common SQL Window Function Interview Questions
+What is the difference between RANK() and DENSE_RANK()?
+
+RANK() leaves gaps in ranking when values are tied, whereas DENSE_RANK() does not.
+How does the NTILE() function work?
+
+It divides rows into N equally-sized groups.
+When would you use LAG() and LEAD()?
+
+LAG() fetches the previous row’s value, and LEAD() fetches the next row’s value.
+How can you get a running total using window functions?
+
+sql
+Copy
+Edit
+SELECT 
+    EmployeeID, 
+    Salary, 
+    SUM(Salary) OVER (ORDER BY EmployeeID) AS RunningTotal
+FROM Employees;
+Can you use multiple window functions in the same query?
+
+Yes, you can use multiple window functions with different partitions and orderings.
